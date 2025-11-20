@@ -19,11 +19,14 @@
 #include "TGClient.h"
 #include "TF1.h"
 #include "TCanvas.h"
+#include "TMath.h"
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
 
 using namespace std;
+
+double xend;
 
 struct Params {
   double g;   // acceleration [m/s^2]
@@ -33,18 +36,49 @@ struct Params {
   double c;
 };
 
+
+
+double f_ri(double x, const vector<double> &y, void *params=0){ 
+  (void) x;   // prevent unused variable warning
+  return y[1];
+}
+
+double f_vi(double x, const vector<double> &y, void *params){ 
+  (void) x;   // prevent unused variable warning
+  Params* p = (Params*) params;
+  return -(p->b*p->d*y[1] + p->c*p->d*p->d*sqrt(y[1]*y[1] + y[3]*y[3])*y[1])/p->m;
+}
+
+double f_rj(double x, const vector<double> &y, void *params=0){ 
+  (void) x;   // prevent unused variable warning
+  return y[3];
+}
+
+double f_vj(double x, const vector<double> &y, void *params){ 
+  (void) x;   // prevent unused variable warning
+  Params* p = (Params*) params;
+  return -(p->b*p->d*y[3] + p->c*p->d*p->d*sqrt(y[1]*y[1] + y[3]*y[3])*y[3])/p->m - p->g;
+}
+
+double f_stop(double x, const vector<double> &y, void *params){
+  (void) x;
+  if (y[0]>xend) return 1;  // stop calulation if the current step takes x past home plate
+  return 0;  // continue calculation
+}
+
+
 int main(int argc, char **argv){
 
   // examples of parameters
   Params pars;
   pars.g=9.81;
   pars.m=0.145;    
-  pars.d=0.0075;   
+  pars.d=0.075;   
   pars.b=1.6e-4;  
   pars.c=0.25;
   void *p_par = (void*) &pars;
 
-  double xend=18.5;       // meters to plate
+  xend=18.5;       // meters to plate
   double z0=1.4;             // height of release [m]
   double theta0=1;         // angle of velocity at release (degrees)
                                       // convert to radians before using!
@@ -72,8 +106,44 @@ int main(int argc, char **argv){
   TApplication theApp("App", &argc, argv); // init ROOT App for displays
 
 
-  double vPitch = 0;   // m/s of pitch needed to land in strike zone at 0.9 meters
+  double vPitch = 40;   // m/s of pitch needed to land in strike zone at 0.9 meters
   // write code to solve for vPitch here
+
+  vector<double> y0(4);
+  // y0[0] = 0;
+  // y0[2] = z0;
+  // y0[1] = vPitch*TMath::Cos(theta0*3.1415/180);
+  // y0[1] = vPitch*TMath::Sin(theta0*3.1415/180);
+
+  vector<pfunc_t> v_fun(4);   // 4 element vector of function pointers
+  v_fun[0]=f_ri;
+  v_fun[1]=f_vi;
+  v_fun[2]=f_rj;
+  v_fun[3]=f_vj;
+
+  double t;
+  double h=0.0001;  // step size
+  vector<TGraph> y;
+
+  double zend=0;
+  int nPoints;
+  // y[2].GetPoint(nPoints-1, t, zend);
+
+
+  while (zend<0.9){
+    vPitch += .01;
+    y0[0] = 0;
+    y0[2] = z0;
+    y0[1] = vPitch*TMath::Cos(theta0*3.1415/180);
+    y0[3] = vPitch*TMath::Sin(theta0*3.1415/180);
+
+    t=0;
+    y = RK4SolveN(v_fun, y0, h, t, p_par, f_stop, 10000);
+    nPoints = y[0].GetN();
+    y[2].GetPoint(nPoints-1, t, zend);
+    //printf("vPitch, zend = (%lf,%lf)\n", vPitch, zend);
+  }
+
 
 
 

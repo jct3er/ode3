@@ -15,11 +15,60 @@
 #include "TGClient.h"
 #include "TF1.h"
 #include "TCanvas.h"
+#include "TMath.h"
+#include <TAxis.h>
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
 
 using namespace std;
+const double g=32.152;
+const double theta=0.01745;
+const double B=0.00041;
+const double omega=188.496;
+const double m = 1.0;
+double v0;
+double phi;
+
+double F(const vector<double> &y){
+    return (0.0039 + 0.0058/(1+TMath::Exp((sqrt(y[1]*y[1] + y[3]*y[3] + y[5]*y[5]) -114.8294)/16.4042)))/2;
+}
+
+double f_ri(double x, const vector<double> &y, void *params=0){ 
+  (void) x;   // prevent unused variable warning
+  return y[1];
+}
+
+double f_vi(double x, const vector<double> &y, void *params){ 
+  (void) x;   // prevent unused variable warning
+  return -F(y)*sqrt(y[1]*y[1] + y[3]*y[3] + y[5]*y[5])*y[1] + B*omega*(y[5]*TMath::Sin(phi)-y[3]*TMath::Cos(phi));
+}
+
+double f_rj(double x, const vector<double> &y, void *params=0){ 
+  (void) x;   // prevent unused variable warning
+  return y[3];
+}
+
+double f_vj(double x, const vector<double> &y, void *params){ 
+  (void) x;
+  return -F(y)*sqrt(y[1]*y[1] + y[3]*y[3] + y[5]*y[5])*y[3] + B*omega*y[1]*TMath::Cos(phi);
+}
+
+double f_rk(double x, const vector<double> &y, void *params=0){ 
+  (void) x;   // prevent unused variable warning
+  return y[5];
+}
+
+double f_vk(double x, const vector<double> &y, void *params){ 
+  (void) x;
+  return -g-F(y)*sqrt(y[1]*y[1] + y[3]*y[3] + y[5]*y[5])*y[5] - B*omega*y[1]*TMath::Sin(phi);
+}
+
+double f_stop(double x, const vector<double> &y, void *params){
+  (void) x;
+  if (y[0]>60) return 1;  // stop calulation if the current step takes x past home plate
+  return 0;  // continue calculation
+}
 
 
 int main(int argc, char **argv){
@@ -45,7 +94,7 @@ int main(int argc, char **argv){
       ip = atoi(optarg);
       break;
     case 'n':
-      showPlot=false;
+      showPlot=true;
       break;
     }
 
@@ -53,18 +102,26 @@ int main(int argc, char **argv){
   if (ip==0){
     cout << "Setting up initial conditions for slider" << endl;
     //SetupSlider(y0);
+      phi = 0;
+      v0 = 124.667;
   }
   else if (ip==1){
     cout << "Setting up initial conditions for curveball" << endl;
     //SetupCurve(y0);
+      phi = 0.7854;
+      v0 = 124.667;
   }
   else if (ip==2){
     cout << "Setting up initial conditions for screwball" << endl;
     //SetupScrewball(y0);
+      phi = 2.3562;
+      v0 = 124.667;
   }
   else {
     cout << "Setting up initial conditions for fastball" << endl;
     //SetupFastball(y0);
+      phi = 3.927;
+      v0 = 139.33;
   }
 
   TApplication theApp("App", &argc, argv); // init ROOT App for displays
@@ -78,17 +135,70 @@ int main(int argc, char **argv){
 
   // write code here
 
+  y0[0]=0;
+  y0[2]=0;
+  y0[4]=0;
+  y0[3]=0;
+  y0[1]=v0*TMath::Cos(theta);
+  y0[5]=v0*TMath::Sin(theta);
+
+  vector<pfunc_t> v_fun(6);   // 4 element vector of function pointers
+  v_fun[0]=f_ri;
+  v_fun[1]=f_vi;
+  v_fun[2]=f_rj;
+  v_fun[3]=f_vj;
+  v_fun[4]=f_rk;
+  v_fun[5]=f_vk;
+
+  double t=0;
+  double h=0.0001;  // step size
+  vector<TGraph> y = RK4SolveN(v_fun, y0, h, t, 0, f_stop, 10000);
+
+  int nPoints = y[0].GetN();
+  y[1].GetPoint(nPoints-1, t, vxend);
+  y[2].GetPoint(nPoints-1, t, yend);
+  y[3].GetPoint(nPoints-1, t, vyend);
+  y[4].GetPoint(nPoints-1, t, zend);
+  y[5].GetPoint(nPoints-1, t, vzend);
+
+  TGraph xy;
+  TGraph xz;
+
+  double xpoint;
+  double ypoint;
+  double zpoint;
+
+  for (int i=0;i<nPoints;i++){
+    y[0].GetPoint(i, t, xpoint);
+    y[2].GetPoint(i, t, ypoint);
+    y[4].GetPoint(i, t, zpoint);
+    xy.SetPoint(i,xpoint,ypoint);
+    xz.SetPoint(i,xpoint,zpoint);
+  }
+
+
+  TCanvas* tc = new TCanvas();
+  xy.GetYaxis()->SetRangeUser(-4, 2);
+  xy.SetLineStyle(kDotted);
+  xy.SetLineWidth(1);
+  xy.Draw();
+  xz.Draw("SAME");
+  tc->Draw();
+  tc->Update();
+  tc->SaveAs("pitches.pdf");
+
+  printf("Time to pass plate:  (%lf)\n",h*nPoints);
 
   // to compare to the plots in Fitzpatrick, output your results in **feet**
   // do not change these lines
   printf("********************************\n");
   printf("Coordinates when x=60 feet\n");
-  printf("(x,y,x) = (%lf,%lf,%lf)\n",xend,yend,zend);
+  printf("(x,y,z) = (%lf,%lf,%lf)\n",xend,yend,zend);
   printf("(vx,vy,vz) = (%lf,%lf,%lf)\n",vxend,vyend,vzend);
   printf("********************************\n");
 
   // plot the trajectory.  See Fitzpatrick for plot details
-  if (showPlot){
+  if (showPlot){      
     cout << "Press ^c to exit" << endl;
     theApp.SetIdleTimer(30,".q");  // set up a failsafe timer to end the program  
     theApp.Run();
