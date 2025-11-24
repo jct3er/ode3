@@ -57,6 +57,7 @@ Part A:
 
 
 
+
 Part B:
 
     Problem 1:
@@ -69,5 +70,6 @@ Part B:
 
 
     Problem 2:
+        In the instructions he asked for one pdf of each pitch type, however, the way he wrote his code (in the parts I'm not suppose to change) it takes a throw type from command line and only runs that one and I could not find a way to add new canvases to an existing pdf without overwritting. Thus I created a pdf for each pitch type.
 
 

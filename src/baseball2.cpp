@@ -178,14 +178,61 @@ int main(int argc, char **argv){
 
 
   TCanvas* tc = new TCanvas();
-  xy.GetYaxis()->SetRangeUser(-4, 2);
-  xy.SetLineStyle(kDotted);
-  xy.SetLineWidth(1);
-  xy.Draw();
-  xz.Draw("SAME");
-  tc->Draw();
-  tc->Update();
-  tc->SaveAs("pitches.pdf");
+  // xy.SetTitle("Fastball;X (ft);Z (ft) / Y (ft)");
+  // xy.GetYaxis()->SetRangeUser(-4, 2);
+  // xy.SetLineStyle(kDotted);
+  // xy.SetLineWidth(1);
+  // xy.Draw();
+  // xz.Draw("SAME");
+  // tc->Draw();
+  // tc->Update();
+  // tc->Print("../pitches_fastball.pdf", "Title: Fastball");
+
+  if (ip==0){
+      xy.SetTitle("Slider;X (ft);Z (ft) / Y (ft)");
+      xy.GetYaxis()->SetRangeUser(-4, 2);
+      xy.SetLineStyle(kDotted);
+      xy.SetLineWidth(1);
+      xy.Draw();
+      xz.Draw("SAME");
+      tc->Draw();
+      tc->Update();
+      tc->Print("../pitches_slider.pdf", "Title: Slider");
+  }
+  else if (ip==1){
+      xy.SetTitle("Curveball;X (ft);Z (ft) / Y (ft)");
+      xy.GetYaxis()->SetRangeUser(-4, 2);
+      xy.SetLineStyle(kDotted);
+      xy.SetLineWidth(1);
+      xy.Draw();
+      xz.Draw("SAME");
+      tc->Draw();
+      tc->Update();
+      tc->Print("../pitches_curveball.pdf", "Title: Curveball");
+  }
+  else if (ip==2){
+      xy.SetTitle("Screwball;X (ft);Z (ft) / Y (ft)");
+      xy.GetYaxis()->SetRangeUser(-4, 2);
+      xy.SetLineStyle(kDotted);
+      xy.SetLineWidth(1);
+      xy.Draw();
+      xz.Draw("SAME");
+      tc->Draw();
+      tc->Update();
+      tc->Print("../pitches_screwball.pdf", "Title: Screwball");
+  }
+  else {
+      xy.SetTitle("Fastball;X (ft);Z (ft) / Y (ft)");
+      xy.GetYaxis()->SetRangeUser(-4, 2);
+      xy.SetLineStyle(kDotted);
+      xy.SetLineWidth(1);
+      xy.Draw();
+      xz.Draw("SAME");
+      tc->Draw();
+      tc->Update();
+      tc->Print("../pitches_fastball.pdf", "Title: Fastball");
+  }
+
 
   printf("Time to pass plate:  (%lf)\n",h*nPoints);
 
