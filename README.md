@@ -55,7 +55,9 @@ The notebook versions contain additional comments on using the integrators.
 
 Part A:
 
+    Energy is conserved in my solution.
 
+    To find the terminal velocity I found where the drag force - gravity was zero. The drag force is about a*V_y^2/m (ignoring V_x) so setting this equal to g gives V_y = sqrt(mg/a) so I can plot this and see if it gives the same plot as vterm.pdf which I tried and it did.
 
 
 Part B:
